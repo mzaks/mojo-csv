@@ -100,7 +100,7 @@ struct CsvBuilder:
         self._buffer.offset(self.num_bytes).store(CR)
         self._buffer.offset(self.num_bytes + 1).store(LF)
         self.num_bytes += 2
-        return String(self._buffer.as_scalar_pointer(), self.num_bytes)
+        return String(self._buffer._as_scalar_pointer(), self.num_bytes)
 
 
 fn escape_quotes_in(s: String) -> String:
@@ -126,4 +126,4 @@ fn escape_quotes_in(s: String) -> String:
     
     let last_index = indices[i_size - 1].to_int()
     memcpy(p_result.offset(offset), p_current.offset(last_index), size - last_index)
-    return String(p_result.as_scalar_pointer(), size + i_size)
+    return String(p_result._as_scalar_pointer(), size + i_size)
