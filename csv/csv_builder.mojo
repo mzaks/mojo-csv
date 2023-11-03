@@ -8,9 +8,10 @@ alias LF_CHAR = "\n"
 alias LF = ord(LF_CHAR)
 alias COMMA_CHAR = ","
 alias COMMA = ord(COMMA_CHAR)
-alias QUOTE_CHAR = "\""
+alias QUOTE_CHAR = '"'
 alias QUOTE = Int8(ord(QUOTE_CHAR))
-        
+
+
 struct CsvBuilder:
     var _buffer: DTypePointer[DType.int8]
     var _capacity: Int
@@ -48,7 +49,9 @@ struct CsvBuilder:
         let size = len(s)
         self.push(s, False)
 
-    fn push[T: AnyType, to_str: fn(v:T) -> String](inout self, value: T, consider_escaping: Bool = False):
+    fn push[
+        T: AnyType, to_str: fn (v: T) -> String
+    ](inout self, value: T, consider_escaping: Bool = False):
         self.push(to_str(value), consider_escaping)
 
     fn push_empty(inout self):
@@ -59,11 +62,13 @@ struct CsvBuilder:
         if num_empty < self._column_count:
             for _ in range(num_empty):
                 self.push_empty()
-    
+
     fn push(inout self, s: String, consider_escaping: Bool = True):
-        if consider_escaping and contains_any_of(s, CR_CHAR, LF_CHAR, COMMA_CHAR, QUOTE_CHAR):
+        if consider_escaping and contains_any_of(
+            s, CR_CHAR, LF_CHAR, COMMA_CHAR, QUOTE_CHAR
+        ):
             return self.push(QUOTE_CHAR + escape_quotes_in(s) + QUOTE_CHAR, False)
-        
+
         let size = len(s)
         self._extend_buffer_if_needed(size + 2)
         if self._elements_count > 0:
@@ -74,10 +79,10 @@ struct CsvBuilder:
             else:
                 self._buffer.offset(self.num_bytes).store(COMMA)
                 self.num_bytes += 1
-        
+
         memcpy(self._buffer.offset(self.num_bytes), s._buffer.data, size)
         s._strref_keepalive()
-        
+
         self.num_bytes += size
         self._elements_count += 1
 
@@ -108,7 +113,7 @@ fn escape_quotes_in(s: String) -> String:
     let i_size = len(indices)
     if i_size == 0:
         return s
-    
+
     let size = len(s._buffer)
     let p_current = s._buffer.data
     let p_result = DTypePointer[DType.int8].alloc(size + i_size)
@@ -117,13 +122,13 @@ fn escape_quotes_in(s: String) -> String:
     p_result.offset(first_index).store(QUOTE)
     var offset = first_index + 1
     for i in range(1, len(indices)):
-        let c_offset = indices[i-1].to_int()
+        let c_offset = indices[i - 1].to_int()
         let length = indices[i].to_int() - c_offset
         memcpy(p_result.offset(offset), p_current.offset(c_offset), length)
         offset += length
         p_result.offset(offset).store(QUOTE)
         offset += 1
-    
+
     let last_index = indices[i_size - 1].to_int()
     memcpy(p_result.offset(offset), p_current.offset(last_index), size - last_index)
     return string_from_pointer(p_result, size + i_size)

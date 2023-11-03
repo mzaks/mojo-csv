@@ -7,15 +7,16 @@ from time import now
 
 alias simd_width_i8 = simdwidthof[DType.int8]()
 
+
 fn find_indices(s: String, c: String) -> DynamicVector[UInt64]:
     let size = len(s)
     var result = DynamicVector[UInt64]()
     let char = Int8(ord(c))
     let p = DTypePointer[DType.int8](s._buffer.data)
-    
+
     @parameter
     fn find[simd_width: Int](offset: Int):
-        @parameter 
+        @parameter
         if simd_width == 1:
             if p.offset(offset).load() == char:
                 return result.push_back(offset)
@@ -27,10 +28,11 @@ fn find_indices(s: String, c: String) -> DynamicVector[UInt64]:
             let current_len = len(result)
             result.reserve(current_len + occurrence_count)
             result.resize(current_len + occurrence_count)
-            compressed_store(offsets, result.data.offset(current_len),  occurrence)
-    
+            compressed_store(offsets, result.data.offset(current_len), occurrence)
+
     vectorize[simd_width_i8, find](size)
     return result
+
 
 fn occurrence_count(s: String, *c: String) -> Int:
     let size = len(s)
@@ -39,10 +41,10 @@ fn occurrence_count(s: String, *c: String) -> Int:
     for i in range(len(c)):
         chars.append(Int8(ord(__get_address_as_lvalue(c[i]))))
     let p = DTypePointer[DType.int8](s._buffer.data)
-    
+
     @parameter
     fn find[simd_width: Int](offset: Int):
-        @parameter 
+        @parameter
         if simd_width == 1:
             for i in range(len(chars)):
                 let char = chars[i]
@@ -57,9 +59,10 @@ fn occurrence_count(s: String, *c: String) -> Int:
                 occurrence |= chunk == chars[i]
             let occurrence_count = reduce_bit_count(occurrence)
             result += occurrence_count
-    
+
     vectorize[simd_width_i8, find](size)
     return result
+
 
 fn contains_any_of(s: String, *c: String) -> Bool:
     let size = len(s)
@@ -68,7 +71,7 @@ fn contains_any_of(s: String, *c: String) -> Bool:
     for i in range(len(c_list)):
         chars.append(Int8(ord(__get_address_as_lvalue(c[i]))))
     let p = DTypePointer[DType.int8](s._buffer.data)
-    
+
     var rest = size
     while rest > 64:
         let chunk = p.offset(size - rest).simd_load[64]()
@@ -93,7 +96,7 @@ fn contains_any_of(s: String, *c: String) -> Bool:
             if any_true(occurrence):
                 return True
         rest -= 16
-    
+
     if rest >= 8:
         let chunk = p.offset(size - rest).simd_load[8]()
         for i in range(len(chars)):
@@ -126,11 +129,13 @@ fn contains_any_of(s: String, *c: String) -> Bool:
 
     return False
 
+
 @always_inline
 fn string_from_pointer(p: DTypePointer[DType.int8], length: Int) -> String:
     # Since Mojo 0.5.0 the pointer needs to provide a 0 terminated byte string
     p.store(length - 1, 0)
     return String(p, length)
+
 
 fn print_v(v: DynamicVector[UInt64]):
     print_no_newline("(", len(v), ")", "[")
@@ -138,10 +143,21 @@ fn print_v(v: DynamicVector[UInt64]):
         print_no_newline(v[i], ",")
     print("]")
 
+
 fn main():
-    let r = find_indices("hello world oh my god, this is some great news tight here on the sport", "o")
+    let r = find_indices(
+        "hello world oh my god, this is some great news tight here on the sport", "o"
+    )
     print_v(r)
-    let c = occurrence_count("hello world oh my god, this is some great news tight here on the sport", "o", "d")
+    let c = occurrence_count(
+        "hello world oh my god, this is some great news tight here on the sport",
+        "o",
+        "d",
+    )
     print(c)
-    let b = contains_any_of("hello world oh my god, this is some great news tight here on the sport!", "?", "!")
+    let b = contains_any_of(
+        "hello world oh my god, this is some great news tight here on the sport!",
+        "?",
+        "!",
+    )
     print(b)
