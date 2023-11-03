@@ -1,4 +1,4 @@
-from .string_utils import find_indices
+from .string_utils import find_indices, string_from_pointer
 from algorithm.functional import vectorize
 from sys.info import simdwidthof
 from sys.intrinsics import compressed_store
@@ -30,7 +30,7 @@ struct CsvTable:
     
     @always_inline
     fn _parse(inout self):
-        let length = len(self._inner_string._buffer)
+        let length = len(self._inner_string)
         var offset = 0
         var in_double_quotes = False
         self._starts.push_back(offset)
@@ -122,9 +122,9 @@ struct CsvTable:
         if self._inner_string[self._starts[index]] == "\"" and self._inner_string[self._ends[index]-1] == "\"":
             let start = self._starts[index] + 1
             let length = (self._ends[index] - 1) - start
-            let p1 = Pointer[Int8].alloc(length)
+            let p1 = Pointer[Int8].alloc(length + 1)
             memcpy(p1, self._inner_string._buffer.data.offset(start), length)
-            let _inner_string = String(p1, length)
+            let _inner_string = string_from_pointer(p1, length + 1)
             let quote_indices = find_indices(_inner_string, "\"")
             let quotes_count = len(quote_indices)
             if quotes_count == 0 or quotes_count & 1 == 1:
@@ -132,7 +132,7 @@ struct CsvTable:
 
             let p = _inner_string._buffer.data
             let length2 = length - (quotes_count >> 1)
-            let p2 = Pointer[Int8].alloc(length2)
+            let p2 = Pointer[Int8].alloc(length2 + 1)
             var offset2 = 0
             memcpy(p2, p, quote_indices[0].to_int())
             offset2 += quote_indices[0].to_int()
@@ -145,7 +145,7 @@ struct CsvTable:
             let last = quote_indices[quotes_count-1].to_int()
             memcpy(p2.offset(offset2), p.offset(last), length - last)
             _inner_string._strref_keepalive()
-            return String(p2, length - (quotes_count >> 1))
+            return string_from_pointer(p2, length - (quotes_count >> 1) + 1)
 
         return self._inner_string[self._starts[index]:self._ends[index]]
 

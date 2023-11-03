@@ -35,10 +35,9 @@ fn find_indices(s: String, c: String) -> DynamicVector[UInt64]:
 fn occurrence_count(s: String, *c: String) -> Int:
     let size = len(s)
     var result = 0
-    let c_list: VariadicListMem[String] = c
-    var chars = UnsafeFixedVector[Int8](len(c_list))
-    for i in range(len(c_list)):
-        chars.append(Int8(ord(c[i])))
+    var chars = UnsafeFixedVector[Int8](len(c))
+    for i in range(len(c)):
+        chars.append(Int8(ord(__get_address_as_lvalue(c[i]))))
     let p = DTypePointer[DType.int8](s._buffer.data)
     
     @parameter
@@ -67,7 +66,7 @@ fn contains_any_of(s: String, *c: String) -> Bool:
     let c_list: VariadicListMem[String] = c
     var chars = UnsafeFixedVector[Int8](len(c_list))
     for i in range(len(c_list)):
-        chars.append(Int8(ord(c[i])))
+        chars.append(Int8(ord(__get_address_as_lvalue(c[i]))))
     let p = DTypePointer[DType.int8](s._buffer.data)
     
     var rest = size
@@ -122,10 +121,16 @@ fn contains_any_of(s: String, *c: String) -> Bool:
     if rest == 1:
         let last = s[size - 1]
         for i in range(len(c_list)):
-            if last == c[i]:
+            if last == __get_address_as_lvalue(c[i]):
                 return True
 
     return False
+
+@always_inline
+fn string_from_pointer(p: DTypePointer[DType.int8], length: Int) -> String:
+    # Since Mojo 0.5.0 the pointer needs to provide a 0 terminated byte string
+    p.store(length - 1, 0)
+    return String(p, length)
 
 fn print_v(v: DynamicVector[UInt64]):
     print_no_newline("(", len(v), ")", "[")

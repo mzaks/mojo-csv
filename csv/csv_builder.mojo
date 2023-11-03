@@ -1,5 +1,5 @@
 from memory.memory import memcpy
-from .string_utils import find_indices, contains_any_of
+from .string_utils import find_indices, contains_any_of, string_from_pointer
 
 alias BufferType = Buffer[Dim(1), DType.int8]
 alias CR_CHAR = "\r"
@@ -75,7 +75,7 @@ struct CsvBuilder:
                 self._buffer.offset(self.num_bytes).store(COMMA)
                 self.num_bytes += 1
         
-        memcpy(self._buffer.offset(self.num_bytes), s._strref_dangerous().data, size)
+        memcpy(self._buffer.offset(self.num_bytes), s._buffer.data, size)
         s._strref_keepalive()
         
         self.num_bytes += size
@@ -99,8 +99,8 @@ struct CsvBuilder:
         self.fill_up_row()
         self._buffer.offset(self.num_bytes).store(CR)
         self._buffer.offset(self.num_bytes + 1).store(LF)
-        self.num_bytes += 2
-        return String(self._buffer.as_scalar_pointer(), self.num_bytes)
+        self.num_bytes += 3
+        return string_from_pointer(self._buffer, self.num_bytes)
 
 
 fn escape_quotes_in(s: String) -> String:
@@ -109,7 +109,7 @@ fn escape_quotes_in(s: String) -> String:
     if i_size == 0:
         return s
     
-    let size = len(s)
+    let size = len(s._buffer)
     let p_current = s._buffer.data
     let p_result = DTypePointer[DType.int8].alloc(size + i_size)
     let first_index = indices[0].to_int()
@@ -126,4 +126,4 @@ fn escape_quotes_in(s: String) -> String:
     
     let last_index = indices[i_size - 1].to_int()
     memcpy(p_result.offset(offset), p_current.offset(last_index), size - last_index)
-    return String(p_result.as_scalar_pointer(), size + i_size)
+    return string_from_pointer(p_result, size + i_size)
