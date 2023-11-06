@@ -1,4 +1,4 @@
-from algorithm.functional import vectorize
+from algorithm.functional import vectorize, tile
 from sys.info import simdwidthof
 from sys.intrinsics import compressed_store
 from math import iota, reduce_bit_count, any_true
@@ -13,6 +13,7 @@ fn find_indices(s: String, c: String) -> DynamicVector[UInt64]:
     var result = DynamicVector[UInt64]()
     let char = Int8(ord(c))
     let p = DTypePointer[DType.int8](s._buffer.data)
+    # result.reserve(size)
 
     @parameter
     fn find[simd_width: Int](offset: Int):
@@ -72,62 +73,24 @@ fn contains_any_of(s: String, *c: String) -> Bool:
         chars.append(Int8(ord(__get_address_as_lvalue(c[i]))))
     let p = DTypePointer[DType.int8](s._buffer.data)
 
+    var flag = False
     var rest = size
-    while rest > 64:
-        let chunk = p.offset(size - rest).simd_load[64]()
+
+    alias tiles = VariadicList(64, 32, 16, 8, 4, 2, 1)
+
+    @parameter
+    fn find[simd_width: Int](i: Int):
+        let chunk = p.offset(size - rest).simd_load[simd_width]()
         for i in range(len(chars)):
             let occurrence = chunk == chars[i]
             if any_true(occurrence):
-                return True
-        rest -= 64
+                flag = True
+                return
+        rest -= simd_width
 
-    if rest >= 32:
-        let chunk = p.offset(size - rest).simd_load[32]()
-        for i in range(len(chars)):
-            let occurrence = chunk == chars[i]
-            if any_true(occurrence):
-                return True
-        rest -= 32
+    tile[find, tiles](0, size)
 
-    if rest >= 16:
-        let chunk = p.offset(size - rest).simd_load[16]()
-        for i in range(len(chars)):
-            let occurrence = chunk == chars[i]
-            if any_true(occurrence):
-                return True
-        rest -= 16
-
-    if rest >= 8:
-        let chunk = p.offset(size - rest).simd_load[8]()
-        for i in range(len(chars)):
-            let occurrence = chunk == chars[i]
-            if any_true(occurrence):
-                return True
-        rest -= 8
-
-    if rest >= 4:
-        let chunk = p.offset(size - rest).simd_load[4]()
-        for i in range(len(chars)):
-            let occurrence = chunk == chars[i]
-            if any_true(occurrence):
-                return True
-        rest -= 4
-
-    if rest >= 2:
-        let chunk = p.offset(size - rest).simd_load[2]()
-        for i in range(len(chars)):
-            let occurrence = chunk == chars[i]
-            if any_true(occurrence):
-                return True
-        rest -= 2
-
-    if rest == 1:
-        let last = s[size - 1]
-        for i in range(len(c_list)):
-            if last == __get_address_as_lvalue(c[i]):
-                return True
-
-    return False
+    return flag
 
 
 @always_inline
