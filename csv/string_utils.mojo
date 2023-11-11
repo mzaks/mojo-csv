@@ -7,6 +7,47 @@ from time import now
 
 alias simd_width_i8 = simdwidthof[DType.int8]()
 
+fn vectorize_and_exit[simd_width: Int, workgroup_function: fn[i: Int](Int) capturing -> Bool](size: Int):
+    let loops = size // simd_width
+    for i in range(loops):
+        if workgroup_function[simd_width](i * simd_width):
+            return
+    
+    var rest = size & (simd_width - 1)
+    @parameter
+    if simd_width >= 64:
+        if rest >= 32:
+            if workgroup_function[32](size - rest):
+                return
+            rest -= 32
+    @parameter
+    if simd_width >= 32:
+        if rest >= 16:
+            if workgroup_function[16](size - rest):
+                return
+            rest -= 16
+    @parameter
+    if simd_width >= 16:
+        if rest >= 8:
+            if workgroup_function[8](size - rest):
+                return
+            rest -= 8
+    @parameter
+    if simd_width >= 8:
+        if rest >= 4:
+            if workgroup_function[4](size - rest):
+                return
+            rest -= 4
+    @parameter
+    if simd_width >= 4:
+        if rest >= 2:
+            if workgroup_function[2](size - rest):
+                return
+            rest -= 2
+
+    if rest == 1:
+        _= workgroup_function[1](size - rest)
+
 
 fn find_indices(s: String, c: String) -> DynamicVector[UInt64]:
     let size = len(s)
@@ -70,64 +111,23 @@ fn contains_any_of(s: String, *c: String) -> Bool:
     var chars = UnsafeFixedVector[Int8](len(c_list))
     for i in range(len(c_list)):
         chars.append(Int8(ord(__get_address_as_lvalue(c[i]))))
-    let p = DTypePointer[DType.int8](s._buffer.data)
+    var p = DTypePointer[DType.int8](s._buffer.data)
+    var flag = False
 
-    var rest = size
-    while rest > 64:
-        let chunk = p.offset(size - rest).simd_load[64]()
+    @parameter
+    fn find[simd_width: Int](i: Int) -> Bool:
+        let chunk = p.simd_load[simd_width]()
+        p = p.offset(simd_width)
         for i in range(len(chars)):
             let occurrence = chunk == chars[i]
             if any_true(occurrence):
-                return True
-        rest -= 64
+                flag = True
+                return flag
+        return False
 
-    if rest >= 32:
-        let chunk = p.offset(size - rest).simd_load[32]()
-        for i in range(len(chars)):
-            let occurrence = chunk == chars[i]
-            if any_true(occurrence):
-                return True
-        rest -= 32
+    vectorize_and_exit[simd_width_i8, find](size)
 
-    if rest >= 16:
-        let chunk = p.offset(size - rest).simd_load[16]()
-        for i in range(len(chars)):
-            let occurrence = chunk == chars[i]
-            if any_true(occurrence):
-                return True
-        rest -= 16
-
-    if rest >= 8:
-        let chunk = p.offset(size - rest).simd_load[8]()
-        for i in range(len(chars)):
-            let occurrence = chunk == chars[i]
-            if any_true(occurrence):
-                return True
-        rest -= 8
-
-    if rest >= 4:
-        let chunk = p.offset(size - rest).simd_load[4]()
-        for i in range(len(chars)):
-            let occurrence = chunk == chars[i]
-            if any_true(occurrence):
-                return True
-        rest -= 4
-
-    if rest >= 2:
-        let chunk = p.offset(size - rest).simd_load[2]()
-        for i in range(len(chars)):
-            let occurrence = chunk == chars[i]
-            if any_true(occurrence):
-                return True
-        rest -= 2
-
-    if rest == 1:
-        let last = s[size - 1]
-        for i in range(len(c_list)):
-            if last == __get_address_as_lvalue(c[i]):
-                return True
-
-    return False
+    return flag
 
 
 @always_inline
