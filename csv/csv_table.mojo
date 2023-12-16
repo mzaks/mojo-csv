@@ -71,7 +71,7 @@ struct CsvTable:
 
     @always_inline
     fn _simd_parse(inout self):
-        let p = DTypePointer[DType.int8](self._inner_string._buffer.data)
+        let p = self._inner_string._as_ptr().bitcast[DType.uint8]()
         let string_byte_length = len(self._inner_string)
         var in_quotes = False
         var last_chunk__ends_on_cr = False
@@ -134,14 +134,14 @@ struct CsvTable:
             let start = self._starts[index] + 1
             let length = (self._ends[index] - 1) - start
             let p1 = Pointer[Int8].alloc(length + 1)
-            memcpy(p1, self._inner_string._buffer.data.offset(start), length)
+            memcpy(p1, self._inner_string._as_ptr().offset(start), length)
             let _inner_string = string_from_pointer(p1, length + 1)
             let quote_indices = find_indices(_inner_string, '"')
             let quotes_count = len(quote_indices)
             if quotes_count == 0 or quotes_count & 1 == 1:
                 return _inner_string
 
-            let p = _inner_string._buffer.data
+            let p = _inner_string._as_ptr()
             let length2 = length - (quotes_count >> 1)
             let p2 = Pointer[Int8].alloc(length2 + 1)
             var offset2 = 0

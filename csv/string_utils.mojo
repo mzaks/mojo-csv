@@ -4,6 +4,7 @@ from sys.intrinsics import compressed_store
 from math import iota, reduce_bit_count, any_true
 from memory import stack_allocation
 from time import now
+from utils.vector import UnsafeFixedVector
 
 alias simd_width_i8 = simdwidthof[DType.int8]()
 
@@ -53,7 +54,7 @@ fn find_indices(s: String, c: String) -> DynamicVector[UInt64]:
     let size = len(s)
     var result = DynamicVector[UInt64]()
     let char = Int8(ord(c))
-    let p = DTypePointer[DType.int8](s._buffer.data)
+    let p = s._as_ptr()
 
     @parameter
     fn find[simd_width: Int](offset: Int):
@@ -68,8 +69,8 @@ fn find_indices(s: String, c: String) -> DynamicVector[UInt64]:
             let occurrence_count = reduce_bit_count(occurrence)
             let current_len = len(result)
             result.reserve(current_len + occurrence_count)
-            result.resize(current_len + occurrence_count)
-            compressed_store(offsets, result.data.offset(current_len), occurrence)
+            result.resize(current_len + occurrence_count, 0)
+            compressed_store(offsets, DTypePointer[DType.uint64](result.data.value).offset(current_len), occurrence)
 
     vectorize[simd_width_i8, find](size)
     return result
@@ -81,7 +82,7 @@ fn occurrence_count(s: String, *c: String) -> Int:
     var chars = UnsafeFixedVector[Int8](len(c))
     for i in range(len(c)):
         chars.append(Int8(ord(__get_address_as_lvalue(c[i]))))
-    let p = DTypePointer[DType.int8](s._buffer.data)
+    let p = s._as_ptr()
 
     @parameter
     fn find[simd_width: Int](offset: Int):
@@ -111,7 +112,7 @@ fn contains_any_of(s: String, *c: String) -> Bool:
     var chars = UnsafeFixedVector[Int8](len(c_list))
     for i in range(len(c_list)):
         chars.append(Int8(ord(__get_address_as_lvalue(c[i]))))
-    var p = DTypePointer[DType.int8](s._buffer.data)
+    var p = s._as_ptr()
     var flag = False
 
     @parameter

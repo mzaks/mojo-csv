@@ -2,7 +2,7 @@ from csv import CsvBuilder, CsvTable
 from testing import assert_equal
 from time import now
 
-fn test_csv_builder():
+fn test_csv_builder() raises:
     var csv = CsvBuilder("a", "b", "c")
     csv.push(1)
     csv.push(2)
@@ -16,7 +16,7 @@ fn test_csv_builder():
     let expected = "a,b,c\r\n1,2,3\r\n4,5,6\r\nHello world,\"Hello \"\"world\"\"\",\r\n"
     _= assert_equal(actual, expected)
 
-fn test_csv_builder_no_header():
+fn test_csv_builder_no_header() raises:
     var csv = CsvBuilder(3)
     csv.push(1)
     csv.push(2)
@@ -30,7 +30,7 @@ fn test_csv_builder_no_header():
     let expected = "1,2,3\r\n4,5,6\r\nHello world,\"Hello \"\"world\"\"\",\r\n"
     _= assert_equal(actual, expected)
 
-fn test_csv_extend_buffer():
+fn test_csv_extend_buffer() raises:
     var csv = CsvBuilder(1)
     var expected = String("")
     for i in range(2000):
@@ -40,7 +40,7 @@ fn test_csv_extend_buffer():
     let actual = csv^.finish()
     _= assert_equal(actual, expected)
 
-fn test_csv_float_values():
+fn test_csv_float_values() raises:
     var csv = CsvBuilder(2)
     csv.push(1)
     csv.push(1.0)
@@ -53,19 +53,20 @@ fn test_csv_float_values():
     let expected = "1,1.000000\r\n1.0,1.100000\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
     _= assert_equal(actual, expected)
 
+
 @value
 @register_passable
-struct Range:
+struct Range(Stringable):
     var start: Int
     var end: Int
 
-fn to_str(v: Range) -> String:
-    return String(v.start) + ":" + String(v.end)
+    fn __str__(self) -> String:
+        return String(self.start) + ":" + String(self.end)
 
-fn test_csv_custom_values():
+fn test_csv_custom_values() raises:
     var csv = CsvBuilder(2)
     let r1 = Range(1, 13)
-    csv.push[Range, to_str](r1)
+    csv.push_stringabel[Range](r1)
     csv.push(1.0)
     csv.push[DType.float32](1)
     csv.push(1.1)
@@ -76,7 +77,7 @@ fn test_csv_custom_values():
     let expected = "1:13,1.000000\r\n1.0,1.100000\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
     _= assert_equal(actual, expected)
 
-fn test_csv_table():
+fn test_csv_table() raises:
     var csv = CsvBuilder(3)
     csv.push("Hello")
     csv.push("World")
@@ -96,7 +97,7 @@ fn test_csv_table():
     _= assert_equal(t.get(1, 1), "What about \"you\", or \"them\"?")
     _= assert_equal(t.get(1, 2), "")
 
-fn test_simd_csv_table():
+fn test_simd_csv_table() raises:
     var csv = CsvBuilder(3)
     csv.push("Hello")
     csv.push("World")
@@ -117,7 +118,7 @@ fn test_simd_csv_table():
     _= assert_equal(t.get(1, 2), "")
 
 
-fn main():
+fn main() raises:
     let tik = now()
     test_csv_builder()
     test_csv_builder_no_header()

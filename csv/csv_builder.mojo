@@ -1,4 +1,5 @@
 from memory.memory import memcpy
+from memory.buffer import Buffer, Dim
 from .string_utils import find_indices, contains_any_of, string_from_pointer
 
 alias BufferType = Buffer[Dim(1), DType.int8]
@@ -49,10 +50,8 @@ struct CsvBuilder:
         let size = len(s)
         self.push(s, False)
 
-    fn push[
-        T: AnyType, to_str: fn (v: T) -> String
-    ](inout self, value: T, consider_escaping: Bool = False):
-        self.push(to_str(value), consider_escaping)
+    fn push_stringabel[T: Stringable](inout self, value: T, consider_escaping: Bool = False):
+        self.push(str(value), consider_escaping)
 
     fn push_empty(inout self):
         self.push("", False)
@@ -80,7 +79,7 @@ struct CsvBuilder:
                 self._buffer.offset(self.num_bytes).store(COMMA)
                 self.num_bytes += 1
 
-        memcpy(self._buffer.offset(self.num_bytes), s._buffer.data, size)
+        memcpy(self._buffer.offset(self.num_bytes), s._as_ptr(), size)
         s._strref_keepalive()
 
         self.num_bytes += size
@@ -115,7 +114,7 @@ fn escape_quotes_in(s: String) -> String:
         return s
 
     let size = len(s._buffer)
-    let p_current = s._buffer.data
+    let p_current = s._as_ptr()
     let p_result = DTypePointer[DType.int8].alloc(size + i_size)
     let first_index = indices[0].to_int()
     memcpy(p_result, p_current, first_index)
