@@ -4,7 +4,7 @@ from sys.intrinsics import compressed_store
 from math import iota, reduce_bit_count, any_true
 from memory import stack_allocation
 from time import now
-from utils.vector import UnsafeFixedVector
+from collections.vector import UnsafeFixedVector
 
 alias simd_width_i8 = simdwidthof[DType.int8]()
 
