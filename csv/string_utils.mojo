@@ -4,7 +4,7 @@ from sys.intrinsics import compressed_store
 from math import iota, reduce_bit_count, any_true
 from memory import stack_allocation
 from time import now
-from collections.vector import UnsafeFixedVector
+from collections.vector import InlinedFixedVector
 
 alias simd_width_i8 = simdwidthof[DType.int8]()
 
@@ -79,9 +79,9 @@ fn find_indices(s: String, c: String) -> DynamicVector[UInt64]:
 fn occurrence_count(s: String, *c: String) -> Int:
     let size = len(s)
     var result = 0
-    var chars = UnsafeFixedVector[Int8](len(c))
+    var chars = InlinedFixedVector[Int8](len(c))
     for i in range(len(c)):
-        chars.append(Int8(ord(__get_address_as_lvalue(c[i]))))
+        chars.append(Int8(ord(c[i])))
     let p = s._as_ptr()
 
     @parameter
@@ -108,10 +108,10 @@ fn occurrence_count(s: String, *c: String) -> Int:
 
 fn contains_any_of(s: String, *c: String) -> Bool:
     let size = len(s)
-    let c_list: VariadicListMem[String] = c
-    var chars = UnsafeFixedVector[Int8](len(c_list))
-    for i in range(len(c_list)):
-        chars.append(Int8(ord(__get_address_as_lvalue(c[i]))))
+    # let c_list: VariadicListMem[String] = c
+    var chars = InlinedFixedVector[Int8](len(c))
+    for i in range(len(c)):
+        chars.append(Int8(ord(c[i])))
     var p = s._as_ptr()
     var flag = False
 
