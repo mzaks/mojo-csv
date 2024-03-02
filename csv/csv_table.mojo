@@ -21,8 +21,8 @@ struct CsvTable:
 
     fn __init__(inout self, owned s: String, with_simd: Bool = True):
         self._inner_string = s
-        self._starts = DynamicVector[Int](10)
-        self._ends = DynamicVector[Int](10)
+        self._starts = DynamicVector[Int](capacity=10)
+        self._ends = DynamicVector[Int](capacity=10)
         self.column_count = -1
         if with_simd:
             self._simd_parse()
@@ -31,12 +31,12 @@ struct CsvTable:
 
     @always_inline
     fn _parse(inout self):
-        let length = len(self._inner_string)
+        var length = len(self._inner_string)
         var offset = 0
         var in_double_quotes = False
         self._starts.push_back(offset)
         while offset < length:
-            let c = self._inner_string._buffer[offset]
+            var c = self._inner_string._buffer[offset]
             if c == QUOTE:
                 in_double_quotes = not in_double_quotes
                 offset += 1
@@ -71,8 +71,8 @@ struct CsvTable:
 
     @always_inline
     fn _simd_parse(inout self):
-        let p = self._inner_string._as_ptr().bitcast[DType.uint8]()
-        let string_byte_length = len(self._inner_string)
+        var p = self._inner_string._as_ptr().bitcast[DType.uint8]()
+        var string_byte_length = len(self._inner_string)
         var in_quotes = False
         var last_chunk__ends_on_cr = False
         self._starts.push_back(0)
@@ -80,29 +80,29 @@ struct CsvTable:
         @always_inline
         @parameter
         fn find_indicies[simd_width: Int](offset: Int):
-            let chars = p.simd_load[simd_width](offset)
-            let quotes = chars == QUOTE
-            let commas = chars == COMMA
-            let lfs = chars == LF
-            let all_bits = quotes | commas | lfs
-            let crs = chars == CR
+            var chars = p.simd_load[simd_width](offset)
+            var quotes = chars == QUOTE
+            var commas = chars == COMMA
+            var lfs = chars == LF
+            var all_bits = quotes | commas | lfs
+            var crs = chars == CR
 
-            let offsets = iota[DType.uint8, simd_width]()
-            let sp: DTypePointer[DType.uint8] = stack_allocation[
+            var offsets = iota[DType.uint8, simd_width]()
+            var sp: DTypePointer[DType.uint8] = stack_allocation[
                 simd_width, UInt8, simd_width
             ]()
             compressed_store(offsets, sp, all_bits)
-            let all_len = reduce_bit_count(all_bits)
+            var all_len = reduce_bit_count(all_bits)
 
             for i in range(all_len):
-                let index = sp.load(i).to_int()
+                var index = sp.load(i).to_int()
                 if quotes[index]:
                     in_quotes = not in_quotes
                     continue
                 if in_quotes:
                     continue
-                let current_offset = index + offset
-                let rs_compensation: Int
+                var current_offset = index + offset
+                var rs_compensation: Int
                 if index > 0:
                     rs_compensation = (lfs[index] & crs[index - 1]).to_int()
                 else:
@@ -113,7 +113,7 @@ struct CsvTable:
                     self.column_count = len(self._ends)
             last_chunk__ends_on_cr = crs[simd_width - 1]
 
-        vectorize[simd_width_u8, find_indicies](string_byte_length)
+        vectorize[find_indicies, simd_width_u8](string_byte_length)
         if self._inner_string[string_byte_length - 1] == "\n":
             _ = self._starts.pop_back()
         else:
@@ -123,7 +123,7 @@ struct CsvTable:
         if column >= self.column_count:
             return ""
 
-        let index = self.column_count * row + column
+        var index = self.column_count * row + column
         if index >= len(self._ends):
             return ""
 
@@ -131,29 +131,29 @@ struct CsvTable:
             self._inner_string[self._starts[index]] == '"'
             and self._inner_string[self._ends[index] - 1] == '"'
         ):
-            let start = self._starts[index] + 1
-            let length = (self._ends[index] - 1) - start
-            let p1 = Pointer[Int8].alloc(length + 1)
+            var start = self._starts[index] + 1
+            var length = (self._ends[index] - 1) - start
+            var p1 = Pointer[Int8].alloc(length + 1)
             memcpy(p1, self._inner_string._as_ptr().offset(start), length)
-            let _inner_string = string_from_pointer(p1, length + 1)
-            let quote_indices = find_indices(_inner_string, '"')
-            let quotes_count = len(quote_indices)
+            var _inner_string = string_from_pointer(p1, length + 1)
+            var quote_indices = find_indices(_inner_string, '"')
+            var quotes_count = len(quote_indices)
             if quotes_count == 0 or quotes_count & 1 == 1:
                 return _inner_string
 
-            let p = _inner_string._as_ptr()
-            let length2 = length - (quotes_count >> 1)
-            let p2 = Pointer[Int8].alloc(length2 + 1)
+            var p = _inner_string._as_ptr()
+            var length2 = length - (quotes_count >> 1)
+            var p2 = Pointer[Int8].alloc(length2 + 1)
             var offset2 = 0
             memcpy(p2, p, quote_indices[0].to_int())
             offset2 += quote_indices[0].to_int()
 
             for i in range(2, quotes_count, 2):
-                let start = quote_indices[i - 1].to_int()
-                let size = quote_indices[i].to_int() - start
+                var start = quote_indices[i - 1].to_int()
+                var size = quote_indices[i].to_int() - start
                 memcpy(p2.offset(offset2), p.offset(start), size)
                 offset2 += size
-            let last = quote_indices[quotes_count - 1].to_int()
+            var last = quote_indices[quotes_count - 1].to_int()
             memcpy(p2.offset(offset2), p.offset(last), length - last)
             _inner_string._strref_keepalive()
             return string_from_pointer(p2, length - (quotes_count >> 1) + 1)

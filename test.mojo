@@ -12,8 +12,8 @@ fn test_csv_builder() raises:
     csv.push(6)
     csv.push("Hello world", False)
     csv.push("Hello \"world\"", True)
-    let actual = csv^.finish()
-    let expected = "a,b,c\r\n1,2,3\r\n4,5,6\r\nHello world,\"Hello \"\"world\"\"\",\r\n"
+    var actual = csv^.finish()
+    var expected = "a,b,c\r\n1,2,3\r\n4,5,6\r\nHello world,\"Hello \"\"world\"\"\",\r\n"
     _= assert_equal(actual, expected)
 
 fn test_csv_builder_no_header() raises:
@@ -26,8 +26,8 @@ fn test_csv_builder_no_header() raises:
     csv.push(6)
     csv.push("Hello world", False)
     csv.push("Hello \"world\"", True)
-    let actual = csv^.finish()
-    let expected = "1,2,3\r\n4,5,6\r\nHello world,\"Hello \"\"world\"\"\",\r\n"
+    var actual = csv^.finish()
+    var expected = "1,2,3\r\n4,5,6\r\nHello world,\"Hello \"\"world\"\"\",\r\n"
     _= assert_equal(actual, expected)
 
 fn test_csv_extend_buffer() raises:
@@ -37,7 +37,7 @@ fn test_csv_extend_buffer() raises:
         csv.push(i, False)
         expected += String(i)
         expected += "\r\n"
-    let actual = csv^.finish()
+    var actual = csv^.finish()
     _= assert_equal(actual, expected)
 
 fn test_csv_float_values() raises:
@@ -49,8 +49,8 @@ fn test_csv_float_values() raises:
     csv.push[DType.float16](1.1)
     csv.push[DType.float32](1.1)
     csv.push[DType.float64](1.1)
-    let actual = csv^.finish()
-    let expected = "1,1.000000\r\n1.0,1.100000\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
+    var actual = csv^.finish()
+    var expected = "1,1.000000\r\n1.0,1.100000\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
     _= assert_equal(actual, expected)
 
 
@@ -65,7 +65,7 @@ struct Range(Stringable):
 
 fn test_csv_custom_values() raises:
     var csv = CsvBuilder(2)
-    let r1 = Range(1, 13)
+    var r1 = Range(1, 13)
     csv.push_stringabel[Range](r1)
     csv.push(1.0)
     csv.push[DType.float32](1)
@@ -73,8 +73,8 @@ fn test_csv_custom_values() raises:
     csv.push[DType.float16](1.1)
     csv.push[DType.float32](1.1)
     csv.push[DType.float64](1.1)
-    let actual = csv^.finish()
-    let expected = "1:13,1.000000\r\n1.0,1.100000\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
+    var actual = csv^.finish()
+    var expected = "1:13,1.000000\r\n1.0,1.100000\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
     _= assert_equal(actual, expected)
 
 fn test_csv_table() raises:
@@ -84,8 +84,8 @@ fn test_csv_table() raises:
     csv.push("I am here", True)
     csv.push("What about you, or them?", True)
     csv.push("What about \"you\", or \"them\"?", True)
-    let csv_text = csv^.finish()
-    let t = CsvTable(csv_text, False)
+    var csv_text = csv^.finish()
+    var t = CsvTable(csv_text, False)
     _= assert_equal(len(t._starts), 6)
     _= assert_equal(len(t._ends), 6)
     _= assert_equal(t.column_count, 3)
@@ -104,8 +104,8 @@ fn test_simd_csv_table() raises:
     csv.push("I am here", True)
     csv.push("What about you, or them?", True)
     csv.push("What about \"you\", or \"them\"?", True)
-    let csv_text = csv^.finish()
-    let t = CsvTable(csv_text, True)
+    var csv_text = csv^.finish()
+    var t = CsvTable(csv_text, True)
     _= assert_equal(len(t._starts), 6)
     _= assert_equal(len(t._ends), 6)
     _= assert_equal(t.column_count, 3)
@@ -119,7 +119,7 @@ fn test_simd_csv_table() raises:
 
 
 fn main() raises:
-    let tik = now()
+    var tik = now()
     test_csv_builder()
     test_csv_builder_no_header()
     test_csv_extend_buffer()
@@ -127,5 +127,5 @@ fn main() raises:
     test_csv_custom_values()
     test_csv_table()
     test_simd_csv_table()
-    let tok = now()
+    var tok = now()
     print("DONE in", (tok - tik) / 1_000_000, "ms")

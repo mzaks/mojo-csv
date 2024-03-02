@@ -2,7 +2,7 @@ from memory.memory import memcpy
 from memory.buffer import Buffer, Dim
 from .string_utils import find_indices, contains_any_of, string_from_pointer
 
-alias BufferType = Buffer[Dim(1), DType.int8]
+alias BufferType = Buffer[DType.int8]
 alias CR_CHAR = "\r"
 alias CR = ord(CR_CHAR)
 alias LF_CHAR = "\n"
@@ -36,7 +36,7 @@ struct CsvBuilder:
         self._finished = False
         self.num_bytes = 0
 
-        let column_name_list: VariadicList[StringLiteral] = coulmn_names
+        var column_name_list: VariadicList[StringLiteral] = coulmn_names
         self._column_count = len(column_name_list)
         for i in range(len(column_name_list)):
             self.push(coulmn_names[i])
@@ -46,8 +46,8 @@ struct CsvBuilder:
             self._buffer.free()
 
     fn push[D: DType](inout self, value: SIMD[D, 1]):
-        let s = String(value)
-        let size = len(s)
+        var s = String(value)
+        var size = len(s)
         self.push(s, False)
 
     fn push_stringabel[T: Stringable](inout self, value: T, consider_escaping: Bool = False):
@@ -57,7 +57,7 @@ struct CsvBuilder:
         self.push("", False)
 
     fn fill_up_row(inout self):
-        let num_empty = self._column_count - (self._elements_count % self._column_count)
+        var num_empty = self._column_count - (self._elements_count % self._column_count)
         if num_empty < self._column_count:
             for _ in range(num_empty):
                 self.push_empty()
@@ -68,7 +68,7 @@ struct CsvBuilder:
         ):
             return self.push(QUOTE_CHAR + escape_quotes_in(s) + QUOTE_CHAR, False)
 
-        let size = len(s)
+        var size = len(s)
         self._extend_buffer_if_needed(size + 2)
         if self._elements_count > 0:
             if self._elements_count % self._column_count == 0:
@@ -92,7 +92,7 @@ struct CsvBuilder:
         var new_size = self._capacity
         while new_size < self.num_bytes + size:
             new_size *= 2
-        let p = DTypePointer[DType.int8].alloc(new_size)
+        var p = DTypePointer[DType.int8].alloc(new_size)
         memcpy(p, self._buffer, self.num_bytes)
         self._buffer.free()
         self._capacity = new_size
@@ -108,26 +108,26 @@ struct CsvBuilder:
 
 
 fn escape_quotes_in(s: String) -> String:
-    let indices = find_indices(s, QUOTE_CHAR)
-    let i_size = len(indices)
+    var indices = find_indices(s, QUOTE_CHAR)
+    var i_size = len(indices)
     if i_size == 0:
         return s
 
-    let size = len(s._buffer)
-    let p_current = s._as_ptr()
-    let p_result = DTypePointer[DType.int8].alloc(size + i_size)
-    let first_index = indices[0].to_int()
+    var size = len(s._buffer)
+    var p_current = s._as_ptr()
+    var p_result = DTypePointer[DType.int8].alloc(size + i_size)
+    var first_index = indices[0].to_int()
     memcpy(p_result, p_current, first_index)
     p_result.offset(first_index).store(QUOTE)
     var offset = first_index + 1
     for i in range(1, len(indices)):
-        let c_offset = indices[i - 1].to_int()
-        let length = indices[i].to_int() - c_offset
+        var c_offset = indices[i - 1].to_int()
+        var length = indices[i].to_int() - c_offset
         memcpy(p_result.offset(offset), p_current.offset(c_offset), length)
         offset += length
         p_result.offset(offset).store(QUOTE)
         offset += 1
 
-    let last_index = indices[i_size - 1].to_int()
+    var last_index = indices[i_size - 1].to_int()
     memcpy(p_result.offset(offset), p_current.offset(last_index), size - last_index)
     return string_from_pointer(p_result, size + i_size)
