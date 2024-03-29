@@ -77,9 +77,9 @@ fn measure_build_csv_consider_escaping(csv_string: String):
     print(len(result), "bytes", t1.column_count, "columns", t1.row_count(), "rows", "get in", get_time / 1_000_000, "ms,", "push in", push_time / 1_000_000, "ms")
 
 fn measure_one_mio_int_table_creation():
-    var nums = DynamicVector[UInt64](capacity=1_000_000)
+    var nums = List[UInt64](capacity=1_000_000)
     for _ in range(1_000_000):
-        nums.push_back(random_ui64(0, 1 << 63))
+        nums.append(random_ui64(0, 1 << 63))
     
     var builder = CsvBuilder(10)
     var tik = now()
@@ -90,9 +90,9 @@ fn measure_one_mio_int_table_creation():
     print("CSV with 10 columns of 1 Mio random ints:", len(s), "bytes", "in", (tok - tik) / 1_000_000, "ms")
 
 fn measure_one_mio_float_table_creation():
-    var nums = DynamicVector[Float64](capacity=1_000_000)
+    var nums = List[Float64](capacity=1_000_000)
     for _ in range(1_000_000):
-        nums.push_back(random_float64())
+        nums.append(random_float64())
     
     var builder = CsvBuilder(10)
     var tik = now()
@@ -120,5 +120,3 @@ fn main():
             measure_build_csv_consider_escaping(csv_string)
     except e:
         print("failed to laod file:", e)
-
-    

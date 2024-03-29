@@ -50,7 +50,7 @@ fn test_csv_float_values() raises:
     csv.push[DType.float32](1.1)
     csv.push[DType.float64](1.1)
     var actual = csv^.finish()
-    var expected = "1,1.000000\r\n1.0,1.100000\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
+    var expected = "1,1.0\r\n1.0,1.1000000000000001\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
     _= assert_equal(actual, expected)
 
 
@@ -74,7 +74,7 @@ fn test_csv_custom_values() raises:
     csv.push[DType.float32](1.1)
     csv.push[DType.float64](1.1)
     var actual = csv^.finish()
-    var expected = "1:13,1.000000\r\n1.0,1.100000\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
+    var expected = "1:13,1.0\r\n1.0,1.1000000000000001\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
     _= assert_equal(actual, expected)
 
 fn test_csv_table() raises:

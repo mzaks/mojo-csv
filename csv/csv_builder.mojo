@@ -1,5 +1,5 @@
 from memory.memory import memcpy
-from memory.buffer import Buffer, Dim
+from buffer import Buffer, Dim
 from .string_utils import find_indices, contains_any_of, string_from_pointer
 
 alias BufferType = Buffer[DType.int8]

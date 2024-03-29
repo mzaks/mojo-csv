@@ -15,14 +15,14 @@ alias simd_width_u8 = simdwidthof[DType.uint8]()
 
 struct CsvTable:
     var _inner_string: String
-    var _starts: DynamicVector[Int]
-    var _ends: DynamicVector[Int]
+    var _starts: List[Int]
+    var _ends: List[Int]
     var column_count: Int
 
     fn __init__(inout self, owned s: String, with_simd: Bool = True):
         self._inner_string = s
-        self._starts = DynamicVector[Int](capacity=10)
-        self._ends = DynamicVector[Int](capacity=10)
+        self._starts = List[Int](capacity=10)
+        self._ends = List[Int](capacity=10)
         self.column_count = -1
         if with_simd:
             self._simd_parse()
@@ -34,40 +34,40 @@ struct CsvTable:
         var length = len(self._inner_string)
         var offset = 0
         var in_double_quotes = False
-        self._starts.push_back(offset)
+        self._starts.append(offset)
         while offset < length:
             var c = self._inner_string._buffer[offset]
             if c == QUOTE:
                 in_double_quotes = not in_double_quotes
                 offset += 1
             elif not in_double_quotes and c == COMMA:
-                self._ends.push_back(offset)
+                self._ends.append(offset)
                 offset += 1
-                self._starts.push_back(offset)
+                self._starts.append(offset)
             elif not in_double_quotes and c == LF:
-                self._ends.push_back(offset)
+                self._ends.append(offset)
                 if self.column_count == -1:
                     self.column_count = len(self._ends)
                 offset += 1
-                self._starts.push_back(offset)
+                self._starts.append(offset)
             elif (
                 not in_double_quotes
                 and c == CR
                 and length > offset + 1
                 and self._inner_string._buffer[offset + 1] == LF
             ):
-                self._ends.push_back(offset)
+                self._ends.append(offset)
                 if self.column_count == -1:
                     self.column_count = len(self._ends)
                 offset += 2
-                self._starts.push_back(offset)
+                self._starts.append(offset)
             else:
                 offset += 1
 
         if self._inner_string[length - 1] == "\n":
             _ = self._starts.pop_back()
         else:
-            self._ends.push_back(length)
+            self._ends.append(length)
 
     @always_inline
     fn _simd_parse(inout self):
@@ -75,12 +75,12 @@ struct CsvTable:
         var string_byte_length = len(self._inner_string)
         var in_quotes = False
         var last_chunk__ends_on_cr = False
-        self._starts.push_back(0)
+        self._starts.append(0)
 
         @always_inline
         @parameter
         fn find_indicies[simd_width: Int](offset: Int):
-            var chars = p.simd_load[simd_width](offset)
+            var chars = p.load[width=simd_width](offset)
             var quotes = chars == QUOTE
             var commas = chars == COMMA
             var lfs = chars == LF
@@ -107,8 +107,8 @@ struct CsvTable:
                     rs_compensation = (lfs[index] & crs[index - 1]).to_int()
                 else:
                     rs_compensation = (lfs[index] & last_chunk__ends_on_cr).to_int()
-                self._ends.push_back(current_offset - rs_compensation)
-                self._starts.push_back(current_offset + 1)
+                self._ends.append(current_offset - rs_compensation)
+                self._starts.append(current_offset + 1)
                 if self.column_count == -1 and lfs[index]:
                     self.column_count = len(self._ends)
             last_chunk__ends_on_cr = crs[simd_width - 1]
@@ -117,7 +117,7 @@ struct CsvTable:
         if self._inner_string[string_byte_length - 1] == "\n":
             _ = self._starts.pop_back()
         else:
-            self._ends.push_back(string_byte_length)
+            self._ends.append(string_byte_length)
 
     fn get(self, row: Int, column: Int) -> String:
         if column >= self.column_count:

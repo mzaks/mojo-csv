@@ -50,9 +50,9 @@ fn vectorize_and_exit[simd_width: Int, workgroup_function: fn[i: Int](Int) captu
         _= workgroup_function[1](size - rest)
 
 
-fn find_indices(s: String, c: String) -> DynamicVector[UInt64]:
+fn find_indices(s: String, c: String) -> List[UInt64]:
     var size = len(s)
-    var result = DynamicVector[UInt64]()
+    var result = List[UInt64]()
     var char = Int8(ord(c))
     var p = s._as_ptr()
 
@@ -61,9 +61,9 @@ fn find_indices(s: String, c: String) -> DynamicVector[UInt64]:
         @parameter
         if simd_width == 1:
             if p.offset(offset).load() == char:
-                return result.push_back(offset)
+                return result.append(offset)
         else:
-            var chunk = p.simd_load[simd_width](offset)
+            var chunk = p.load[width=simd_width](offset)
             var occurrence = chunk == char
             var offsets = iota[DType.uint64, simd_width]() + offset
             var occurrence_count = reduce_bit_count(occurrence)
@@ -94,7 +94,7 @@ fn occurrence_count(s: String, *c: String) -> Int:
                     result += 1
                     return
         else:
-            var chunk = p.simd_load[simd_width](offset)
+            var chunk = p.load[width=simd_width](offset)
 
             var occurrence = SIMD[DType.bool, simd_width](False)
             for i in range(len(chars)):
@@ -117,7 +117,7 @@ fn contains_any_of(s: String, *c: String) -> Bool:
 
     @parameter
     fn find[simd_width: Int](i: Int) -> Bool:
-        var chunk = p.simd_load[simd_width]()
+        var chunk = p.load[width=simd_width]()
         p = p.offset(simd_width)
         for i in range(len(chars)):
             var occurrence = chunk == chars[i]
@@ -138,8 +138,8 @@ fn string_from_pointer(p: DTypePointer[DType.int8], length: Int) -> String:
     return String(p, length)
 
 
-fn print_v(v: DynamicVector[UInt64]):
-    print_no_newline("(", len(v), ")", "[")
+fn print_v(v: List[UInt64]):
+    print("(" +  str(len(v)) + ")[")
     for i in range(len(v)):
-        print_no_newline(v[i], ",")
-    print("]")
+        var end = ", " if i < len(v) - 1 else "]\n"
+        print(v[i], ",")
