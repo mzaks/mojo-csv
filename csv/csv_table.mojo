@@ -12,8 +12,7 @@ alias LF = ord("\n")
 alias CR = ord("\r")
 alias simd_width_u8 = simdwidthof[DType.uint8]()
 
-
-struct CsvTable:
+struct CsvTable[sep: Int = COMMA]:
     var _inner_string: String
     var _starts: List[Int]
     var _ends: List[Int]
@@ -40,7 +39,7 @@ struct CsvTable:
             if c == QUOTE:
                 in_double_quotes = not in_double_quotes
                 offset += 1
-            elif not in_double_quotes and c == COMMA:
+            elif not in_double_quotes and c == sep:
                 self._ends.append(offset)
                 offset += 1
                 self._starts.append(offset)
@@ -65,7 +64,7 @@ struct CsvTable:
                 offset += 1
 
         if self._inner_string[length - 1] == "\n":
-            _ = self._starts.pop_back()
+            _ = self._starts.pop()
         else:
             self._ends.append(length)
 
@@ -82,9 +81,9 @@ struct CsvTable:
         fn find_indicies[simd_width: Int](offset: Int):
             var chars = p.load[width=simd_width](offset)
             var quotes = chars == QUOTE
-            var commas = chars == COMMA
+            var separators = chars == sep
             var lfs = chars == LF
-            var all_bits = quotes | commas | lfs
+            var all_bits = quotes | separators | lfs
             var crs = chars == CR
 
             var offsets = iota[DType.uint8, simd_width]()
@@ -115,7 +114,7 @@ struct CsvTable:
 
         vectorize[find_indicies, simd_width_u8](string_byte_length)
         if self._inner_string[string_byte_length - 1] == "\n":
-            _ = self._starts.pop_back()
+            _ = self._starts.pop()
         else:
             self._ends.append(string_byte_length)
 
