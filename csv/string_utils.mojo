@@ -54,7 +54,7 @@ fn find_indices(s: String, c: String) -> List[UInt64]:
     var size = len(s)
     var result = List[UInt64]()
     var char = Int8(ord(c))
-    var p = s._as_ptr()
+    var p = s.unsafe_ptr()
 
     @parameter
     fn find[simd_width: Int](offset: Int):
@@ -70,7 +70,7 @@ fn find_indices(s: String, c: String) -> List[UInt64]:
             var current_len = len(result)
             result.reserve(current_len + occurrence_count)
             result.resize(current_len + occurrence_count, 0)
-            compressed_store(offsets, DTypePointer[DType.uint64](result.data.value).offset(current_len), occurrence)
+            compressed_store(offsets, DTypePointer[DType.uint64](result.data).offset(current_len), occurrence)
 
     vectorize[find, simd_width_i8](size)
     return result
@@ -82,7 +82,7 @@ fn occurrence_count(s: String, *c: String) -> Int:
     var chars = InlinedFixedVector[Int8](len(c))
     for i in range(len(c)):
         chars.append(Int8(ord(c[i])))
-    var p = s._as_ptr()
+    var p = s.unsafe_ptr()
 
     @parameter
     fn find[simd_width: Int](offset: Int):
@@ -112,7 +112,7 @@ fn contains_any_of(s: String, *c: String) -> Bool:
     var chars = InlinedFixedVector[Int8](len(c))
     for i in range(len(c)):
         chars.append(Int8(ord(c[i])))
-    var p = s._as_ptr()
+    var p = s.unsafe_ptr()
     var flag = False
 
     @parameter
@@ -142,4 +142,4 @@ fn print_v(v: List[UInt64]):
     print("(" +  str(len(v)) + ")[")
     for i in range(len(v)):
         var end = ", " if i < len(v) - 1 else "]\n"
-        print(v[i], ",")
+        print(v[i], end)

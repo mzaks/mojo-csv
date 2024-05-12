@@ -1,5 +1,4 @@
 from csv import CsvTable, CsvBuilder
-from math import min
 from random import random_ui64, random_float64
 from time import now
 
