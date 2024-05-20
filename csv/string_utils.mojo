@@ -53,8 +53,8 @@ fn vectorize_and_exit[simd_width: Int, workgroup_function: fn[i: Int](Int) captu
 fn find_indices(s: String, c: String) -> List[UInt64]:
     var size = len(s)
     var result = List[UInt64]()
-    var char = Int8(ord(c))
-    var p = s.unsafe_ptr()
+    var char = UInt8(ord(c))
+    var p = DTypePointer(s.unsafe_uint8_ptr())
 
     @parameter
     fn find[simd_width: Int](offset: Int):
@@ -79,10 +79,10 @@ fn find_indices(s: String, c: String) -> List[UInt64]:
 fn occurrence_count(s: String, *c: String) -> Int:
     var size = len(s)
     var result = 0
-    var chars = InlinedFixedVector[Int8](len(c))
+    var chars = InlinedFixedVector[UInt8](len(c))
     for i in range(len(c)):
-        chars.append(Int8(ord(c[i])))
-    var p = s.unsafe_ptr()
+        chars.append(UInt8(ord(c[i])))
+    var p = DTypePointer(s.unsafe_uint8_ptr())
 
     @parameter
     fn find[simd_width: Int](offset: Int):
@@ -109,10 +109,10 @@ fn occurrence_count(s: String, *c: String) -> Int:
 fn contains_any_of(s: String, *c: String) -> Bool:
     var size = len(s)
     # var c_list: VariadicListMem[String] = c
-    var chars = InlinedFixedVector[Int8](len(c))
+    var chars = InlinedFixedVector[UInt8](len(c))
     for i in range(len(c)):
-        chars.append(Int8(ord(c[i])))
-    var p = s.unsafe_ptr()
+        chars.append(UInt8(ord(c[i])))
+    var p = DTypePointer(s.unsafe_uint8_ptr())
     var flag = False
 
     @parameter
@@ -132,7 +132,7 @@ fn contains_any_of(s: String, *c: String) -> Bool:
 
 
 @always_inline
-fn string_from_pointer(p: DTypePointer[DType.int8], length: Int) -> String:
+fn string_from_pointer(p: DTypePointer[DType.uint8], length: Int) -> String:
     # Since Mojo 0.5.0 the pointer needs to provide a 0 terminated byte string
     p.store(length - 1, 0)
     return String(p, length)
@@ -142,4 +142,4 @@ fn print_v(v: List[UInt64]):
     print("(" +  str(len(v)) + ")[")
     for i in range(len(v)):
         var end = ", " if i < len(v) - 1 else "]\n"
-        print(v[i], end)
+        print(v[i], end=end)

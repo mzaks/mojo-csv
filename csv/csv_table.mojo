@@ -70,7 +70,7 @@ struct CsvTable[sep: Int = COMMA]:
 
     @always_inline
     fn _simd_parse(inout self):
-        var p = self._inner_string.unsafe_uint8_ptr()
+        var p = DTypePointer(self._inner_string.unsafe_uint8_ptr())
         var string_byte_length = len(self._inner_string)
         var in_quotes = False
         var last_chunk__ends_on_cr = False
@@ -132,17 +132,17 @@ struct CsvTable[sep: Int = COMMA]:
         ):
             var start = self._starts[index] + 1
             var length = (self._ends[index] - 1) - start
-            var p1 = Pointer[Int8].alloc(length + 1)
-            memcpy(p1, self._inner_string.unsafe_ptr().offset(start), length)
+            var p1 = Pointer[UInt8].alloc(length + 1)
+            memcpy(p1, self._inner_string.unsafe_uint8_ptr().offset(start), length)
             var _inner_string = string_from_pointer(p1, length + 1)
             var quote_indices = find_indices(_inner_string, '"')
             var quotes_count = len(quote_indices)
             if quotes_count == 0 or quotes_count & 1 == 1:
                 return _inner_string
 
-            var p = _inner_string.unsafe_ptr()
+            var p = _inner_string.unsafe_uint8_ptr()
             var length2 = length - (quotes_count >> 1)
-            var p2 = Pointer[Int8].alloc(length2 + 1)
+            var p2 = Pointer[UInt8].alloc(length2 + 1)
             var offset2 = 0
             memcpy(p2, p, int(quote_indices[0]))
             offset2 += int(quote_indices[0])

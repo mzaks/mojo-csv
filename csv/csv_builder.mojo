@@ -10,11 +10,11 @@ alias LF = ord(LF_CHAR)
 alias COMMA_CHAR = ","
 alias COMMA = ord(COMMA_CHAR)
 alias QUOTE_CHAR = '"'
-alias QUOTE = Int8(ord(QUOTE_CHAR))
+alias QUOTE = UInt8(ord(QUOTE_CHAR))
 
 
 struct CsvBuilder:
-    var _buffer: DTypePointer[DType.int8]
+    var _buffer: DTypePointer[DType.uint8]
     var _capacity: Int
     var num_bytes: Int
     var _column_count: Int
@@ -23,7 +23,7 @@ struct CsvBuilder:
 
     fn __init__(inout self, column_count: Int):
         self._capacity = 1024
-        self._buffer = DTypePointer[DType.int8].alloc(self._capacity)
+        self._buffer = DTypePointer[DType.uint8].alloc(self._capacity)
         self._column_count = column_count
         self._elements_count = 0
         self._finished = False
@@ -31,7 +31,7 @@ struct CsvBuilder:
 
     fn __init__(inout self, *coulmn_names: StringLiteral):
         self._capacity = 1024
-        self._buffer = DTypePointer[DType.int8].alloc(self._capacity)
+        self._buffer = DTypePointer[DType.uint8].alloc(self._capacity)
         self._elements_count = 0
         self._finished = False
         self.num_bytes = 0
@@ -79,7 +79,7 @@ struct CsvBuilder:
                 self._buffer.offset(self.num_bytes).store(COMMA)
                 self.num_bytes += 1
 
-        memcpy(self._buffer.offset(self.num_bytes), s.unsafe_ptr(), size)
+        memcpy(self._buffer.offset(self.num_bytes), s.unsafe_uint8_ptr(), size)
         s._strref_keepalive()
 
         self.num_bytes += size
@@ -92,7 +92,7 @@ struct CsvBuilder:
         var new_size = self._capacity
         while new_size < self.num_bytes + size:
             new_size *= 2
-        var p = DTypePointer[DType.int8].alloc(new_size)
+        var p = DTypePointer[DType.uint8].alloc(new_size)
         memcpy(p, self._buffer, self.num_bytes)
         self._buffer.free()
         self._capacity = new_size
@@ -114,8 +114,8 @@ fn escape_quotes_in(s: String) -> String:
         return s
 
     var size = len(s._buffer)
-    var p_current = s.unsafe_ptr()
-    var p_result = DTypePointer[DType.int8].alloc(size + i_size)
+    var p_current = s.unsafe_uint8_ptr()
+    var p_result = DTypePointer[DType.uint8].alloc(size + i_size)
     var first_index = int(indices[0])
     memcpy(p_result, p_current, first_index)
     p_result.offset(first_index).store(QUOTE)
