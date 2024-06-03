@@ -2,7 +2,7 @@ from .string_utils import find_indices, string_from_pointer
 from algorithm.functional import vectorize
 from sys.info import simdwidthof
 from sys.intrinsics import compressed_store
-from math import iota, reduce_bit_count
+from math import iota
 from memory import stack_allocation
 
 
@@ -70,7 +70,7 @@ struct CsvTable[sep: Int = COMMA]:
 
     @always_inline
     fn _simd_parse(inout self):
-        var p = DTypePointer(self._inner_string.unsafe_uint8_ptr())
+        var p = DTypePointer(self._inner_string.unsafe_ptr())
         var string_byte_length = len(self._inner_string)
         var in_quotes = False
         var last_chunk__ends_on_cr = False
@@ -91,7 +91,7 @@ struct CsvTable[sep: Int = COMMA]:
                 simd_width, UInt8, simd_width
             ]()
             compressed_store(offsets, sp, all_bits)
-            var all_len = reduce_bit_count(all_bits)
+            var all_len = all_bits.reduce_bit_count()
 
             for i in range(all_len):
                 var index = int(sp.load(i))
@@ -133,14 +133,14 @@ struct CsvTable[sep: Int = COMMA]:
             var start = self._starts[index] + 1
             var length = (self._ends[index] - 1) - start
             var p1 = Pointer[UInt8].alloc(length + 1)
-            memcpy(p1, self._inner_string.unsafe_uint8_ptr().offset(start), length)
+            memcpy(p1, DTypePointer(self._inner_string.unsafe_ptr()).offset(start), length)
             var _inner_string = string_from_pointer(p1, length + 1)
             var quote_indices = find_indices(_inner_string, '"')
             var quotes_count = len(quote_indices)
             if quotes_count == 0 or quotes_count & 1 == 1:
                 return _inner_string
 
-            var p = _inner_string.unsafe_uint8_ptr()
+            var p = DTypePointer(_inner_string.unsafe_ptr())
             var length2 = length - (quotes_count >> 1)
             var p2 = Pointer[UInt8].alloc(length2 + 1)
             var offset2 = 0

@@ -83,7 +83,7 @@ fn measure_one_mio_int_table_creation():
     var builder = CsvBuilder(10)
     var tik = now()
     for i in range(len(nums)):
-        builder.push[DType.uint64](nums[i])
+        builder.push(nums[i])
     var s = builder^.finish()
     var tok = now()
     print("CSV with 10 columns of 1 Mio random ints:", len(s), "bytes", "in", (tok - tik) / 1_000_000, "ms")
@@ -96,7 +96,7 @@ fn measure_one_mio_float_table_creation():
     var builder = CsvBuilder(10)
     var tik = now()
     for i in range(len(nums)):
-        builder.push[DType.float64](nums[i])
+        builder.push(nums[i])
     var s = builder^.finish()
     var tok = now()
     print("CSV with 10 columns of 1 Mio radom floats:", len(s), "bytes", "in", (tok - tik) / 1_000_000, "ms")

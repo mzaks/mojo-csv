@@ -45,12 +45,7 @@ struct CsvBuilder:
         if not self._finished:
             self._buffer.free()
 
-    fn push[D: DType](inout self, value: SIMD[D, 1]):
-        var s = String(value)
-        var size = len(s)
-        self.push(s, False)
-
-    fn push_stringabel[T: Stringable](inout self, value: T, consider_escaping: Bool = False):
+    fn push[S: Stringable](inout self, value: S, consider_escaping: Bool = False):
         self.push(str(value), consider_escaping)
 
     fn push_empty(inout self):
@@ -79,7 +74,7 @@ struct CsvBuilder:
                 self._buffer.offset(self.num_bytes).store(COMMA)
                 self.num_bytes += 1
 
-        memcpy(self._buffer.offset(self.num_bytes), s.unsafe_uint8_ptr(), size)
+        memcpy(self._buffer.offset(self.num_bytes), s.unsafe_ptr(), size)
         s._strref_keepalive()
 
         self.num_bytes += size
@@ -114,7 +109,7 @@ fn escape_quotes_in(s: String) -> String:
         return s
 
     var size = len(s._buffer)
-    var p_current = s.unsafe_uint8_ptr()
+    var p_current = DTypePointer(s.unsafe_ptr())
     var p_result = DTypePointer[DType.uint8].alloc(size + i_size)
     var first_index = int(indices[0])
     memcpy(p_result, p_current, first_index)

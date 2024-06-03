@@ -1,7 +1,8 @@
 from algorithm.functional import vectorize
 from sys.info import simdwidthof
 from sys.intrinsics import compressed_store
-from math import iota, reduce_bit_count, any_true
+# from math import iota, reduce_bit_count, any_true
+from math import iota
 from memory import stack_allocation
 from time import now
 from collections.vector import InlinedFixedVector
@@ -54,7 +55,7 @@ fn find_indices(s: String, c: String) -> List[UInt64]:
     var size = len(s)
     var result = List[UInt64]()
     var char = UInt8(ord(c))
-    var p = DTypePointer(s.unsafe_uint8_ptr())
+    var p = DTypePointer(s.unsafe_ptr())
 
     @parameter
     fn find[simd_width: Int](offset: Int):
@@ -66,7 +67,7 @@ fn find_indices(s: String, c: String) -> List[UInt64]:
             var chunk = p.load[width=simd_width](offset)
             var occurrence = chunk == char
             var offsets = iota[DType.uint64, simd_width]() + offset
-            var occurrence_count = reduce_bit_count(occurrence)
+            var occurrence_count = occurrence.reduce_bit_count()
             var current_len = len(result)
             result.reserve(current_len + occurrence_count)
             result.resize(current_len + occurrence_count, 0)
@@ -82,7 +83,7 @@ fn occurrence_count(s: String, *c: String) -> Int:
     var chars = InlinedFixedVector[UInt8](len(c))
     for i in range(len(c)):
         chars.append(UInt8(ord(c[i])))
-    var p = DTypePointer(s.unsafe_uint8_ptr())
+    var p = DTypePointer(s.unsafe_ptr())
 
     @parameter
     fn find[simd_width: Int](offset: Int):
@@ -99,7 +100,7 @@ fn occurrence_count(s: String, *c: String) -> Int:
             var occurrence = SIMD[DType.bool, simd_width](False)
             for i in range(len(chars)):
                 occurrence |= chunk == chars[i]
-            var occurrence_count = reduce_bit_count(occurrence)
+            var occurrence_count = occurrence.reduce_bit_count()
             result += occurrence_count
 
     vectorize[find, simd_width_i8](size)
@@ -112,7 +113,7 @@ fn contains_any_of(s: String, *c: String) -> Bool:
     var chars = InlinedFixedVector[UInt8](len(c))
     for i in range(len(c)):
         chars.append(UInt8(ord(c[i])))
-    var p = DTypePointer(s.unsafe_uint8_ptr())
+    var p = DTypePointer(s.unsafe_ptr())
     var flag = False
 
     @parameter
@@ -121,7 +122,7 @@ fn contains_any_of(s: String, *c: String) -> Bool:
         p = p.offset(simd_width)
         for i in range(len(chars)):
             var occurrence = chunk == chars[i]
-            if any_true(occurrence):
+            if occurrence.reduce_or():
                 flag = True
                 return flag
         return False

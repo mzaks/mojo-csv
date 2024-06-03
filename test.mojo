@@ -34,7 +34,7 @@ fn test_csv_extend_buffer() raises:
     var csv = CsvBuilder(1)
     var expected = String("")
     for i in range(2000):
-        csv.push(i, False)
+        csv.push(i)
         expected += String(i)
         expected += "\r\n"
     var actual = csv^.finish()
@@ -44,11 +44,11 @@ fn test_csv_float_values() raises:
     var csv = CsvBuilder(2)
     csv.push(1)
     csv.push(1.0)
-    csv.push[DType.float32](1)
+    csv.push(Float32(1))
     csv.push(1.1)
-    csv.push[DType.float16](1.1)
-    csv.push[DType.float32](1.1)
-    csv.push[DType.float64](1.1)
+    csv.push(Float16(1.1))
+    csv.push(Float32(1.1))
+    csv.push(Float64(1.1))
     var actual = csv^.finish()
     var expected = "1,1.0\r\n1.0,1.1000000000000001\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
     _= assert_equal(actual, expected)
@@ -66,13 +66,13 @@ struct Range(Stringable):
 fn test_csv_custom_values() raises:
     var csv = CsvBuilder(2)
     var r1 = Range(1, 13)
-    csv.push_stringabel[Range](r1)
+    csv.push(r1)
     csv.push(1.0)
-    csv.push[DType.float32](1)
+    csv.push(Float32(1))
     csv.push(1.1)
-    csv.push[DType.float16](1.1)
-    csv.push[DType.float32](1.1)
-    csv.push[DType.float64](1.1)
+    csv.push(Float16(1.1))
+    csv.push(Float32(1.1))
+    csv.push(Float64(1.1))
     var actual = csv^.finish()
     var expected = "1:13,1.0\r\n1.0,1.1000000000000001\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
     _= assert_equal(actual, expected)
