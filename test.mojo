@@ -1,6 +1,6 @@
 from csv import CsvBuilder, CsvTable
 from testing import assert_equal
-from time import now
+from time import perf_counter_ns
 
 fn test_csv_builder() raises:
     var csv = CsvBuilder("a", "b", "c")
@@ -50,13 +50,13 @@ fn test_csv_float_values() raises:
     csv.push(Float32(1.1))
     csv.push(Float64(1.1))
     var actual = csv^.finish()
-    var expected = "1,1.0\r\n1.0,1.1000000000000001\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
+    var expected = "1,1.0\r\n1.0,1.1\r\n1.0996094,1.1\r\n1.1,\r\n"
     _= assert_equal(actual, expected)
 
 
-@value
+@fieldwise_init
 @register_passable
-struct Range(Stringable):
+struct Range(Stringable, Copyable, Movable):
     var start: Int
     var end: Int
 
@@ -74,7 +74,7 @@ fn test_csv_custom_values() raises:
     csv.push(Float32(1.1))
     csv.push(Float64(1.1))
     var actual = csv^.finish()
-    var expected = "1:13,1.0\r\n1.0,1.1000000000000001\r\n1.099609375,1.1000000238418579\r\n1.1000000000000001,\r\n"
+    var expected = "1:13,1.0\r\n1.0,1.1\r\n1.0996094,1.1\r\n1.1,\r\n"
     _= assert_equal(actual, expected)
 
 fn test_csv_table() raises:
@@ -119,7 +119,7 @@ fn test_simd_csv_table() raises:
 
 
 fn main() raises:
-    var tik = now()
+    var tik = perf_counter_ns()
     test_csv_builder()
     test_csv_builder_no_header()
     test_csv_extend_buffer()
@@ -127,5 +127,5 @@ fn main() raises:
     test_csv_custom_values()
     test_csv_table()
     test_simd_csv_table()
-    var tok = now()
+    var tok = perf_counter_ns()
     print("DONE in", (tok - tik) / 1_000_000, "ms")

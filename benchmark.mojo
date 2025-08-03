@@ -1,6 +1,6 @@
 from csv import CsvTable, CsvBuilder
 from random import random_ui64, random_float64
-from time import now
+from time import perf_counter_ns
 
 fn measure_simd_csv(csv_string: String):
     print("CSV Table with SIMD")
@@ -8,12 +8,13 @@ fn measure_simd_csv(csv_string: String):
     var column_count = 0
     var row_count = 0
     for _ in range(1):
-        var tik = now()
+        var tik = perf_counter_ns()
         var t1 = CsvTable(csv_string, True)
-        var tok = now()
+        var tok = perf_counter_ns()
         column_count = t1.column_count
         row_count = t1.row_count()
-        min_runtime = min(min_runtime, tok - tik)
+        if tok - tik < min_runtime:
+            min_runtime = tok - tik
 
     print(len(csv_string), "bytes", column_count, "columns", row_count, "rows", "in", min_runtime / 1_000_000, "ms")
 
@@ -23,12 +24,13 @@ fn measure_csv(csv_string: String):
     var column_count = 0
     var row_count = 0
     for _ in range(1):
-        var tik = now()
+        var tik = perf_counter_ns()
         var t1 = CsvTable(csv_string, False)
-        var tok = now()
+        var tok = perf_counter_ns()
         column_count = t1.column_count
         row_count = t1.row_count()
-        min_runtime = min(min_runtime, tok - tik)
+        if tok - tik < min_runtime:
+            min_runtime = tok - tik
 
     print(len(csv_string), "bytes", column_count, "columns", row_count, "rows", "in", min_runtime / 1_000_000, "ms")
 
@@ -38,16 +40,16 @@ fn measure_build_csv(csv_string: String):
     var builder = CsvBuilder(t1.column_count)
     var get_time = 0
     var push_time = 0
-    
+
     for row in range(t1.row_count()):
         for column in range(t1.column_count):
-            var tik = now()
+            var tik = perf_counter_ns()
             var value = t1.get(row, column)
-            var tok = now()
+            var tok = perf_counter_ns()
             get_time += tok - tik
-            tik = now()
+            tik = perf_counter_ns()
             builder.push(value, False)
-            tok = now()
+            tok = perf_counter_ns()
             push_time += tok - tik
     var result = builder^.finish()
 
@@ -59,16 +61,16 @@ fn measure_build_csv_consider_escaping(csv_string: String):
     var builder = CsvBuilder(t1.column_count)
     var get_time = 0
     var push_time = 0
-    
+
     for row in range(t1.row_count()):
         for column in range(t1.column_count):
-            var tik = now()
+            var tik = perf_counter_ns()
             var value = t1.get(row, column)
-            var tok = now()
+            var tok = perf_counter_ns()
             get_time += tok - tik
-            tik = now()
+            tik = perf_counter_ns()
             builder.push(value, True)
-            tok = now()
+            tok = perf_counter_ns()
             push_time += tok - tik
 
     var result = builder^.finish()
@@ -79,26 +81,26 @@ fn measure_one_mio_int_table_creation():
     var nums = List[UInt64](capacity=1_000_000)
     for _ in range(1_000_000):
         nums.append(random_ui64(0, 1 << 63))
-    
+
     var builder = CsvBuilder(10)
-    var tik = now()
+    var tik = perf_counter_ns()
     for i in range(len(nums)):
         builder.push(nums[i])
     var s = builder^.finish()
-    var tok = now()
+    var tok = perf_counter_ns()
     print("CSV with 10 columns of 1 Mio random ints:", len(s), "bytes", "in", (tok - tik) / 1_000_000, "ms")
 
 fn measure_one_mio_float_table_creation():
     var nums = List[Float64](capacity=1_000_000)
     for _ in range(1_000_000):
         nums.append(random_float64())
-    
+
     var builder = CsvBuilder(10)
-    var tik = now()
+    var tik = perf_counter_ns()
     for i in range(len(nums)):
         builder.push(nums[i])
     var s = builder^.finish()
-    var tok = now()
+    var tok = perf_counter_ns()
     print("CSV with 10 columns of 1 Mio radom floats:", len(s), "bytes", "in", (tok - tik) / 1_000_000, "ms")
 
 fn main():
